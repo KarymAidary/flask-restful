@@ -15,9 +15,6 @@ class Tag(db.Model):
     count = db.Column(db.Integer)
 
 
-db.create_all()
-
-
 class PageSchema(ma.ModelSchema):
     tags = fields.Nested('TagSchema', many=True, only=('count', 'name'))
 
