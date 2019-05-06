@@ -1,9 +1,8 @@
-import requests
 import os
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
-from parser import MyHTMLParser
+from parser import TegHTMLParser
 from marshmallow import fields
 
 
@@ -16,7 +15,7 @@ db = SQLAlchemy(app)
 
 ma = Marshmallow(app)
 
-parser = MyHTMLParser()
+parser = TegHTMLParser()
 
 
 class Page(db.Model):
@@ -50,12 +49,10 @@ class TagSchema(ma.ModelSchema):
 @app.route('/tags/', methods=['POST'])
 def add_page():
     url = request.json['url']
-    try:   
-        r = requests.get(url)
-        parser.feed(r.text)
+    try:
         new_page = Page(url=url)
         db.session.add(new_page)
-        for key, value in parser.d.items():
+        for key, value in parser.get_el(url):
             tag = Tag(name=key, count=value, page=new_page)
             db.session.add(tag)
         db.session.commit()
