@@ -1,4 +1,3 @@
-import requests
 from HTMLParser import HTMLParser
 
 
@@ -11,7 +10,6 @@ class TegHTMLParser(HTMLParser):
         else:
             self.d[tag] = 1
 
-    def get_el(self, url):
-        request = requests.get(url)
-        self.feed(request.text)
+    def get_el(self, req):
+        self.feed(req.text)
         return self.d.items()

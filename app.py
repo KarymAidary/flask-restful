@@ -1,10 +1,10 @@
 import os
+import requests
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
-from parser import TegHTMLParser
 from marshmallow import fields
-
+from parser import TegHTMLParser
 
 app = Flask(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -37,28 +37,32 @@ db.create_all()
 class PageSchema(ma.ModelSchema):
     tags = fields.Nested('TagSchema', many=True, only=('count', 'name'))
 
-    class Meta: 
+    class Meta:
         model = Page
 
 
 class TagSchema(ma.ModelSchema):
-    class Meta: 
+    class Meta:
         model = Tag
 
 
 @app.route('/tags/', methods=['POST'])
 def add_page():
-    url = request.json['url']
-    try:
+    if request.method == 'POST':
+        try:
+            url = request.json['url']
+            req = requests.get(url)
+        except requests.exceptions.ConnectionError:
+            return jsonify({'error': 'Invalid url'})
+        except TypeError:
+            return jsonify({'error': 'You must use json'})
         new_page = Page(url=url)
         db.session.add(new_page)
-        for key, value in parser.get_el(url):
+        for key, value in parser.get_el(req):
             tag = Tag(name=key, count=value, page=new_page)
             db.session.add(tag)
         db.session.commit()
         return jsonify(new_page.id)
-    except:
-        return jsonify({'error': 'Invalid url. Perhaps you meant http://{}'.format(url)})
 
 
 @app.route('/tags/', methods=['GET'])
@@ -66,7 +70,7 @@ def get_pages():
     pages = Page.query.all()
     page_schema = PageSchema(many=True)
     output = page_schema.dump(pages).data
-    return jsonify({'pages': output})    
+    return jsonify({'pages': output})
 
 
 @app.route('/tags/<id>/', methods=['GET'])
